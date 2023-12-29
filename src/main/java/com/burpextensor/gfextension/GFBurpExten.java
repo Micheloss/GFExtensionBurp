@@ -22,9 +22,9 @@ public class GFBurpExten implements IBurpExtender, IHttpListener {
 	
 	private ArrayList<String> wellKnownHeaders;
 	
-	private HashMap<String, String> alreadyReportedParameters;
-	private HashMap<String, String> alreadyReportedHeaders;
-	private HashMap<String, String> alreadyReportedCookies;
+	private ArrayList<String>  alreadyReportedParameters;
+	private ArrayList<String>  alreadyReportedHeaders;
+	private ArrayList<String>  alreadyReportedCookies;
 
 	
 	
@@ -37,9 +37,9 @@ public class GFBurpExten implements IBurpExtender, IHttpListener {
         callbacks.setExtensionName("GF Regex Pattern Detector");
         callbacks.registerHttpListener(this);
         
-        alreadyReportedParameters = new HashMap<String, String>();
-        alreadyReportedHeaders = new HashMap<String, String>();
-        alreadyReportedCookies = new HashMap<String, String>();
+        alreadyReportedParameters = new ArrayList<String>();
+        alreadyReportedHeaders = new ArrayList<String>();
+        alreadyReportedCookies = new ArrayList<String>();
         // Load regex patterns from JSON files
         loadPatterns();
     }
@@ -157,10 +157,8 @@ public class GFBurpExten implements IBurpExtender, IHttpListener {
     
     private void printIssue(IHttpRequestResponse messageInfo, String parameter, String file, String type) {
     	
-        IScanIssue [] previousIssues = callbacks.getScanIssues(null);
-
-        
-        
+       
+  
     	String url = callbacksHelpers.analyzeRequest(messageInfo).getUrl().toString();
     	if( !(url.contains(".js") || url.contains(".png") || url.contains(".css") || url.contains(".jpg") || url.contains(".jpeg") || url.contains(".js")) ) {
     		
@@ -181,47 +179,71 @@ public class GFBurpExten implements IBurpExtender, IHttpListener {
 	    	}
 	    	
 	    	IScanIssue newIssue = null; 
+	    	
 	    	if(type == "parameter") {
-		    	 newIssue = new CustomScanIssue(
-		    		callbacksHelpers.analyzeRequest(messageInfo).getUrl(),
-		    	    "[GF] Found interesting parameter",
-		    	    "Low",
-		    	    "Tentative",
-		    	    "Found a parameter that might be interesting. \n Found parameter <b> " + parameter + " </b> in "+ callbacksHelpers.analyzeRequest(messageInfo).getUrl().getPath() +" . Test for <b> " + file.split(".json")[0].toUpperCase() + " </b> attacks",
-		    	    "Test for problem",
-		    	    new IHttpRequestResponse[] { callbacks.applyMarkers(messageInfo, requestHighlights, null)},
-		    	    httpService,
-		    	    "Found a parameter that might be interesting. \n Found parameter <b> " + parameter + " </b> "+ callbacksHelpers.analyzeRequest(messageInfo).getUrl().getPath() +" . Test for <b> " + file.split(".json")[0].toUpperCase() + " </b> attacks"
-		    	);
+	    		
+	    		String detail = "Found a parameter that might be interesting. \n Found parameter <b> " + parameter + " </b> in "+ callbacksHelpers.analyzeRequest(messageInfo).getUrl().getPath() +" . Test for <b> " + file.split(".json")[0].toUpperCase() + " </b> attacks";
+	    		
+	    		if(! alreadyReportedParameters.contains(detail)) {
+	    			
+		    		alreadyReportedParameters.add(detail);
+		    		
+			    	 newIssue = new CustomScanIssue(
+			    		callbacksHelpers.analyzeRequest(messageInfo).getUrl(),
+			    	    "[GF] Found interesting parameter",
+			    	    "Low",
+			    	    "Tentative",
+			    	    detail,
+			    	    "Test for problem",
+			    	    new IHttpRequestResponse[] { callbacks.applyMarkers(messageInfo, requestHighlights, null)},
+			    	    httpService,
+			    	    detail
+			    	);
+			    	 callbacks.addScanIssue(newIssue);
+	    		}
 	    	} else if(type == "cookie") {
-		    	 newIssue = new CustomScanIssue(
-		    		callbacksHelpers.analyzeRequest(messageInfo).getUrl(),
-		    	    "[GF] Found custom cookie parameter",
-		    	    "Low",
-		    	    "Tentative",
-		    	    "Found a cookie parameter that might be interesting. \n Found cookie <b> " + parameter + " </b> .",
-		    	    "Test for problem",
-		    	    new IHttpRequestResponse[] { callbacks.applyMarkers(messageInfo, requestHighlights, null)},
-		    	    httpService,
-		    	    "Found a cookie parameter that might be interesting. \n Found cookie <b> " + parameter + " </b> ."
-		    	);
+	    		
+	    		String detail = "Found a cookie parameter that might be interesting. \n Found cookie <b> " + parameter + " </b> ";
+	    		
+	    		if(! alreadyReportedCookies.contains(detail)) {
+	    			 alreadyReportedCookies.add(detail);
+			    	 newIssue = new CustomScanIssue(
+			    		callbacksHelpers.analyzeRequest(messageInfo).getUrl(),
+			    	    "[GF] Found custom cookie parameter",
+			    	    "Low",
+			    	    "Tentative",
+			    	    detail,
+			    	    "Test for problem",
+			    	    new IHttpRequestResponse[] { callbacks.applyMarkers(messageInfo, requestHighlights, null)},
+			    	    httpService,
+			    	    detail
+			    	);
+			    	 callbacks.addScanIssue(newIssue);
+	    		}
 	    	} else if(type == "header") {
-		    	 newIssue = new CustomScanIssue(
-		    		callbacksHelpers.analyzeRequest(messageInfo).getUrl(),
-		    	    "[GF] Found custom header",
-		    	    "Low",
-		    	    "Tentative",
-		    	    "Found a custom header that might be interesting. \n Found header <b> " + parameter + " </b> .",
-		    	    "Test for problem",
-		    	    new IHttpRequestResponse[] { callbacks.applyMarkers(messageInfo, requestHighlights, null)},
-		    	    httpService,
-		    	    "Found a custom header that might be interesting. \n Found header <b> " + parameter + " </b> ."
-		    	);
+	    		
+	    		String detail = "Found a custom header that might be interesting. \n Found header <b> " + parameter + " </b> .";
+	    		
+	    		if(! alreadyReportedHeaders.contains(detail)) {
+	    			 alreadyReportedHeaders.add(detail);
+			    	 newIssue = new CustomScanIssue(
+			    		callbacksHelpers.analyzeRequest(messageInfo).getUrl(),
+			    	    "[GF] Found custom header",
+			    	    "Low",
+			    	    "Tentative",
+			    	    detail,
+			    	    "Test for problem",
+			    	    new IHttpRequestResponse[] { callbacks.applyMarkers(messageInfo, requestHighlights, null)},
+			    	    httpService,
+			    	    detail
+			    	);
+			    	 callbacks.addScanIssue(newIssue);
+	    		}
 	    	}
 	
 	    	
 	    	// Avoid repeated scan issues
-	    	boolean found = false;
+	    	/*boolean found = false;
 	    	
 	    	for(IScanIssue previousIssue : previousIssues ) {
 	    		
@@ -236,7 +258,7 @@ public class GFBurpExten implements IBurpExtender, IHttpListener {
 	    	
 	    	if(!found) {
 	    		callbacks.addScanIssue(newIssue);
-	    	}
+	    	}*/
     	}
     }
 }
